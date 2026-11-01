@@ -1,0 +1,6 @@
+{
+  "name": "Maman & bébé Pregnancy Tracker",
+  "description": "Comprehensive pregnancy & baby tracker featuring Material 3 design, 3D visual baby development, size themes, kick counter, baby feed/diaper logger, postpartum care, and full Android Jetpack Compose Clean Architecture studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
