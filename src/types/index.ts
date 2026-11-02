@@ -18,6 +18,8 @@ export interface UserProfile {
   babyBirthDate?: string;
   babyGender?: 'girl' | 'boy' | 'surprise';
   babyGenderTwin?: 'girl' | 'boy' | 'surprise';
+  language?: 'en' | 'fr' | 'es' | 'de' | 'pt' | 'ar' | 'it' | 'ja';
+  unitSystem?: 'imperial' | 'metric';
 }
 
 export interface WeekDetail {

@@ -42,6 +42,7 @@ import { RegistryChecklist } from './components/RegistryChecklist';
 import { MyJournal } from './components/MyJournal';
 import { KnowledgeBase } from './components/KnowledgeBase';
 import { AndroidCodeStudio } from './components/AndroidCodeStudio';
+import { MamanAssistant } from './components/MamanAssistant';
 
 import {
   Heart,
@@ -63,6 +64,13 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 
+import {
+  SupportedLanguage,
+  UnitSystem,
+  SUPPORTED_LANGUAGES,
+  TRANSLATIONS,
+} from './i18n/translations';
+
 const INITIAL_PROFILE: UserProfile = {
   id: 'usr_default',
   motherName: 'Camille',
@@ -73,6 +81,8 @@ const INITIAL_PROFILE: UserProfile = {
   dueDate: '2027-02-14',
   lmpDate: '2026-05-10',
   activeStage: 'pregnancy',
+  language: 'en',
+  unitSystem: 'imperial',
 };
 
 const INITIAL_MEDICATIONS: MedicationReminder[] = [
@@ -136,6 +146,7 @@ export default function App() {
   const [isDeviceFrame, setIsDeviceFrame] = useState(true);
   const [showAndroidStudio, setShowAndroidStudio] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAssistantModal, setShowAssistantModal] = useState(false);
 
   // App Profile & State
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -368,6 +379,23 @@ export default function App() {
   const currentWeekDetail = PREGNANCY_WEEKS[selectedWeek] || PREGNANCY_WEEKS[24];
   const isTwin = profile.babyMode === 'twin';
 
+  // Dynamic localization dictionary & RTL
+  const currentLang = profile.language || 'en';
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+  const isRtl = currentLang === 'ar';
+
+  const formattedDueDate = (() => {
+    try {
+      return new Date(profile.dueDate).toLocaleDateString(currentLang, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return profile.dueDate;
+    }
+  })();
+
   // Toggle Twin Mode directly from quick header
   const handleToggleTwin = () => {
     setProfile((prev) => ({
@@ -377,7 +405,12 @@ export default function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors">
+    <div
+      dir={isRtl ? 'rtl' : 'ltr'}
+      className={`w-full min-h-screen bg-[#FAF5EE] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors ${
+        isRtl ? 'font-[sans-serif]' : ''
+      }`}
+    >
       {/* Universal Desktop Top Control Bar */}
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800 px-4 sm:px-8 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
@@ -388,11 +421,11 @@ export default function App() {
             </div>
             <div>
               <span className="font-bold text-base tracking-tight text-stone-900 dark:text-stone-100 whitespace-nowrap block">
-                Maman &amp; bébé
+                {t.appName}
               </span>
               <span className="text-[10px] text-stone-500 tracking-wide block">
                 {profile.activeStage === 'pregnancy'
-                  ? `Week ${progress.currentWeek}, Day ${progress.currentDay} · ${isTwin ? 'Twin Journey' : 'Pregnancy'}`
+                  ? `${t.header.week} ${progress.currentWeek}, ${t.header.day} ${progress.currentDay} · ${isTwin ? t.header.twinJourney : t.header.pregnancy}`
                   : `Baby & Postpartum · ${profile.babyName}`}
               </span>
             </div>
@@ -410,7 +443,7 @@ export default function App() {
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>{isTwin ? 'Twin Mode (2x Active)' : 'Single Baby Mode'}</span>
+              <span>{isTwin ? `${t.header.twinMode} (2x)` : t.header.singleBaby}</span>
             </button>
 
             {/* Stage Mode Switcher */}
@@ -425,13 +458,48 @@ export default function App() {
             >
               <Heart className="w-3.5 h-3.5 text-rose-500" />
               <span>
-                Switch to {profile.activeStage === 'pregnancy' ? 'Baby Log' : 'Pregnancy Tracker'}
+                {profile.activeStage === 'pregnancy' ? t.header.switchToBaby : t.header.switchToPregnancy}
               </span>
             </button>
           </div>
 
-          {/* Zone 3: Studio Inspector & Settings */}
+          {/* Zone 3: Studio Inspector & Quick Language Switcher & Settings */}
           <div className="flex items-center gap-2">
+            {/* Quick Language Dropdown */}
+            <div className="relative">
+              <select
+                value={currentLang}
+                onChange={(e) =>
+                  setProfile((prev) => ({
+                    ...prev,
+                    language: e.target.value as SupportedLanguage,
+                  }))
+                }
+                className="appearance-none bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 text-xs font-semibold py-1.5 pl-2.5 pr-7 rounded-xl border border-stone-200/60 dark:border-stone-700 cursor-pointer focus:outline-none focus:ring-1 focus:ring-rose-400"
+                title="Change Language (8 Supported: EN, FR, ES, DE, PT, AR, IT, JA)"
+              >
+                {SUPPORTED_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.flag} {l.nativeName}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[9px] text-stone-400">
+                ▼
+              </div>
+            </div>
+
+            {/* Maman Assistant Launcher */}
+            <button
+              onClick={() => setShowAssistantModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white rounded-xl text-xs font-bold cursor-pointer transition-all shadow-xs"
+              title="Chat with Maman Assistant (Gemini AI)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Maman Assistant</span>
+              <span className="sm:hidden">Assistant</span>
+            </button>
+
             <button
               onClick={() => setShowAndroidStudio(!showAndroidStudio)}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
@@ -442,9 +510,9 @@ export default function App() {
             >
               <Code className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">
-                {showAndroidStudio ? 'Hide Studio' : 'Android Studio Code'}
+                {showAndroidStudio ? 'Hide Studio' : t.header.androidStudio}
               </span>
-              <span className="sm:hidden">Code</span>
+              <span className="sm:hidden">{t.header.code}</span>
             </button>
 
             <button
@@ -458,7 +526,7 @@ export default function App() {
             <button
               onClick={() => setShowSettingsModal(true)}
               className="p-2 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl cursor-pointer transition-colors"
-              title="Settings & Due Date Calculator"
+              title={t.header.settings}
             >
               <Settings className="w-4 h-4" />
             </button>
@@ -494,7 +562,8 @@ export default function App() {
           <PhoneFrame
             isDeviceFrame={isDeviceFrame}
             onToggleFrame={() => setIsDeviceFrame(!isDeviceFrame)}
-            brandTitle="Maman & bébé"
+            brandTitle={t.appName}
+            isRtl={isRtl}
           >
             {/* Scrollable Mobile Screen Body */}
             <div className="flex-1 pb-24 px-4 sm:px-6 pt-3 space-y-4 max-w-4xl mx-auto w-full">
@@ -509,24 +578,24 @@ export default function App() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <div className="flex items-center gap-1.5 text-xs text-stone-500 mb-0.5">
-                          <span>Due {profile.dueDate}</span>
+                          <span>{t.pregnancyHome.due} {formattedDueDate}</span>
                           <span>·</span>
                           <span className="font-semibold text-rose-600 dark:text-rose-400">
-                            {progress.daysRemaining} days to go
+                            {progress.daysRemaining} {t.pregnancyHome.daysRemaining}
                           </span>
                         </div>
                         <h1 className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
-                          Week {progress.currentWeek}, Day {progress.currentDay}
+                          {t.header.week} {progress.currentWeek}, {t.header.day} {progress.currentDay}
                         </h1>
                       </div>
 
-                      {/* Twin indicator badge */}
+                      {/* Due date edit button */}
                       <button
                         onClick={() => setShowSettingsModal(true)}
                         className="p-2 rounded-2xl bg-stone-50 dark:bg-stone-800 border border-stone-200/60 dark:border-stone-700 text-stone-600 hover:text-stone-900 text-xs flex items-center gap-1.5 cursor-pointer"
                       >
                         <Calendar className="w-3.5 h-3.5 text-rose-500" />
-                        <span className="font-semibold">Edit Due Date</span>
+                        <span className="font-semibold">{t.pregnancyHome.editDueDate}</span>
                       </button>
                     </div>
 
@@ -538,10 +607,38 @@ export default function App() {
                       />
                     </div>
                     <div className="flex items-center justify-between text-[11px] text-stone-400 font-mono">
-                      <span>Conception</span>
-                      <span>Trimester 2 (Week 24)</span>
-                      <span>Birth (Week 40)</span>
+                      <span>{t.pregnancyHome.conception}</span>
+                      <span>{t.pregnancyHome.trimester} 2 ({t.header.week} 24)</span>
+                      <span>{t.pregnancyHome.birth} ({t.header.week} 40)</span>
                     </div>
+                  </div>
+
+                  {/* Maman Assistant Quick Feature Card */}
+                  <div className="w-full bg-gradient-to-br from-rose-50/90 via-white to-purple-50/60 dark:from-stone-900 dark:via-stone-900 dark:to-stone-850 rounded-3xl p-4 sm:p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white shadow-xs shrink-0">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                            Maman Assistant
+                          </h3>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
+                            Gemini AI
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">
+                          Supportive non-medical guidance for Week {selectedWeek} ({currentWeekDetail.babyMilestones})
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAssistantModal(true)}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl cursor-pointer transition-all shadow-xs shrink-0 whitespace-nowrap"
+                    >
+                      Ask Mama
+                    </button>
                   </div>
 
                   {/* 3D & Visual Baby Development Canvas */}
@@ -558,16 +655,17 @@ export default function App() {
                     currentTheme={sizeTheme}
                     onSelectTheme={setSizeTheme}
                     isTwin={isTwin}
+                    unitSystem={profile.unitSystem || 'imperial'}
                   />
 
                   {/* Week-by-Week Interactive Scrubber Carousel */}
                   <div className="w-full bg-white dark:bg-stone-900 rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-stone-900 dark:text-stone-100 text-sm">
-                        Week-by-Week Journey Timeline
+                        {t.pregnancyHome.journeyTimeline}
                       </span>
                       <span className="text-xs text-rose-600 font-semibold font-mono">
-                        Viewing Week {selectedWeek}
+                        {t.pregnancyHome.viewingWeek} {selectedWeek}
                       </span>
                     </div>
 
@@ -606,7 +704,7 @@ export default function App() {
                   <div className="w-full bg-white dark:bg-stone-900 rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs space-y-4">
                     <div>
                       <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
-                        Fetal Highlights · Week {selectedWeek}
+                        {t.pregnancyHome.highlights} · {t.header.week} {selectedWeek}
                       </span>
                       <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
                         {currentWeekDetail.babyMilestones}
@@ -629,7 +727,7 @@ export default function App() {
                     {/* Mom's Body Changes */}
                     <div className="p-3.5 bg-rose-50/60 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50">
                       <span className="text-xs font-bold text-rose-900 dark:text-rose-200 block mb-1">
-                        Mom&apos;s Body this Week:
+                        {t.pregnancyHome.momBody}:
                       </span>
                       <p className="text-xs text-rose-800 dark:text-rose-300 leading-relaxed">
                         {currentWeekDetail.momChanges}
@@ -641,7 +739,7 @@ export default function App() {
                       <div className="p-3.5 bg-purple-50/70 dark:bg-purple-950/30 rounded-2xl border border-purple-200 dark:border-purple-900/50">
                         <span className="text-xs font-bold text-purple-900 dark:text-purple-200 block mb-1 flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5 text-purple-600" />
-                          <span>Twin Pregnancy Special Note:</span>
+                          <span>{t.pregnancyHome.twinNote}:</span>
                         </span>
                         <p className="text-xs text-purple-800 dark:text-purple-300 leading-relaxed">
                           {currentWeekDetail.twinNotes}
@@ -652,7 +750,7 @@ export default function App() {
                     {/* Daily Curated Tips */}
                     <div className="pt-2 border-t border-stone-100 dark:border-stone-800">
                       <span className="text-xs font-bold text-stone-800 dark:text-stone-200 block mb-2">
-                        Daily Curated Care Tips
+                        {t.pregnancyHome.dailyTips}
                       </span>
                       <div className="space-y-1.5">
                         {currentWeekDetail.dailyTips.map((tip, idx) => (
@@ -701,6 +799,34 @@ export default function App() {
               {/* TAB 3: BABY & POSTPARTUM LOG */}
               {activeTab === 'baby' && (
                 <div className="space-y-4">
+                  {/* Maman Assistant Postpartum & Newborn Guide Card */}
+                  <div className="w-full bg-gradient-to-br from-rose-50/90 via-white to-amber-50/60 dark:from-stone-900 dark:via-stone-900 dark:to-stone-850 rounded-3xl p-4 sm:p-5 border border-rose-200/70 dark:border-rose-900/40 shadow-xs flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-rose-400 flex items-center justify-center text-white shadow-xs shrink-0">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-stone-900 dark:text-stone-100 text-sm">
+                            Maman Assistant
+                          </h3>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300 font-semibold border border-rose-200 dark:border-rose-800">
+                            Gemini AI
+                          </span>
+                        </div>
+                        <p className="text-xs text-stone-500 mt-0.5 line-clamp-1">
+                          Parenting guidance for {isTwin ? `${profile.babyName} & ${profile.babyNameTwin}` : profile.babyName} · Sleep, feeds, & mom recovery
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAssistantModal(true)}
+                      className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold rounded-xl cursor-pointer transition-all shadow-xs shrink-0 whitespace-nowrap"
+                    >
+                      Ask Mama
+                    </button>
+                  </div>
+
                   <BabyLogger
                     feedingLogs={feedingLogs}
                     diaperLogs={diaperLogs}
@@ -754,6 +880,9 @@ export default function App() {
                   <MyJournal
                     entries={journalEntries}
                     onAddEntry={(entry) => setJournalEntries([entry, ...journalEntries])}
+                    motherName={profile.motherName}
+                    babyName={isTwin ? `${profile.babyName} & ${profile.babyNameTwin}` : profile.babyName}
+                    dueDate={profile.dueDate}
                   />
                 </div>
               )}
@@ -804,27 +933,27 @@ export default function App() {
                 {[
                   {
                     id: 'home' as const,
-                    label: 'Pregnancy',
+                    label: t.tabs.pregnancy,
                     icon: <Heart className="w-5 h-5" />,
                   },
                   {
                     id: 'logger' as const,
-                    label: 'Logger',
+                    label: t.tabs.logger,
                     icon: <Activity className="w-5 h-5" />,
                   },
                   {
                     id: 'baby' as const,
-                    label: 'Baby Log',
+                    label: t.tabs.babyLog,
                     icon: <Baby className="w-5 h-5" />,
                   },
                   {
                     id: 'tools' as const,
-                    label: 'Planning',
+                    label: t.tabs.planning,
                     icon: <Calendar className="w-5 h-5" />,
                   },
                   {
                     id: 'guides' as const,
-                    label: 'Guides',
+                    label: t.tabs.guides,
                     icon: <BookOpen className="w-5 h-5" />,
                   },
                 ].map((item) => {
@@ -871,6 +1000,26 @@ export default function App() {
           setSelectedWeek(wk);
         }}
       />
+
+      {/* Maman Assistant Gemini Chat Modal */}
+      {showAssistantModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-stone-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-xl shadow-2xl relative animate-in zoom-in-95">
+            <MamanAssistant
+              stage={profile.activeStage}
+              currentWeek={progress.currentWeek}
+              babyAge="3 months"
+              isTwin={isTwin}
+              motherName={profile.motherName}
+              babyName={profile.babyName}
+              babyNameTwin={profile.babyNameTwin}
+              language={profile.language || 'en'}
+              onClose={() => setShowAssistantModal(false)}
+              isModal={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

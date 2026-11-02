@@ -1,6 +1,6 @@
 export interface AndroidFile {
   filename: string;
-  category: 'manifest' | 'gradle' | 'room' | 'repository' | 'viewmodel' | 'compose_ui' | 'theme' | 'sample_data';
+  category: 'manifest' | 'gradle' | 'room' | 'repository' | 'viewmodel' | 'compose_ui' | 'theme' | 'sample_data' | 'localization' | 'ai_assistant';
   description: string;
   code: string;
 }
@@ -43,8 +43,9 @@ export const ANDROID_CODE_FILES: AndroidFile[] = [
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
+        android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.MamanBebe"
-        tools:targetApi="34">
+        tools:targetApi="35">
 
         <activity
             android:name=".MainActivity"
@@ -772,7 +773,7 @@ fun BabyLoggerScreen() {
   {
     filename: 'Theme.kt',
     category: 'theme',
-    description: 'Material 3 Soft Pastel ColorScheme (Rose, Sage, Soft Lavender) & Typography Tokens',
+    description: 'Material 3 Warm Caramel ColorScheme (Caramel, Toffee, Dulce de Leche, Warm Cream) & Typography Tokens',
     code: `package com.maman.bebe.tracker.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -780,32 +781,33 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// Soft Pastel Palette Tailored for Maternity & Newborn Comfort
-val MamanRosePrimary = Color(0xFFD9777F)
-val MamanRoseContainer = Color(0xFFFBEAEB)
-val MamanSageSecondary = Color(0xFF6B8E76)
-val MamanSageContainer = Color(0xFFEAF1EB)
-val MamanLavenderTertiary = Color(0xFF8C7AA9)
-val MamanLavenderContainer = Color(0xFFF2EEF8)
-val MamanBackgroundLight = Color(0xFFFAF8F5)
+// Warm Caramel & Toffee Palette Tailored for Maternity Comfort & Gentle Elegance
+val MamanCaramelPrimary = Color(0xFFBF8042)
+val MamanCaramelContainer = Color(0xFFFDF8F3)
+val MamanToffeeSecondary = Color(0xFFA96831)
+val MamanToffeeContainer = Color(0xFFF8EDE0)
+val MamanAmberTertiary = Color(0xFF8B5027)
+val MamanAmberContainer = Color(0xFFF0DAC1)
+val MamanBackgroundLight = Color(0xFFFAF5EE)
 val MamanSurfaceLight = Color(0xFFFFFFFF)
+val MamanSurfaceVariant = Color(0xFFF5EBE0)
 
 private val LightColorScheme = lightColorScheme(
-    primary = MamanRosePrimary,
+    primary = MamanCaramelPrimary,
     onPrimary = Color.White,
-    primaryContainer = MamanRoseContainer,
-    onPrimaryContainer = Color(0xFF4C151A),
-    secondary = MamanSageSecondary,
+    primaryContainer = MamanCaramelContainer,
+    onPrimaryContainer = Color(0xFF341B0E),
+    secondary = MamanToffeeSecondary,
     onSecondary = Color.White,
-    secondaryContainer = MamanSageContainer,
-    onSecondaryContainer = Color(0xFF142E1B),
-    tertiary = MamanLavenderTertiary,
+    secondaryContainer = MamanToffeeContainer,
+    onSecondaryContainer = Color(0xFF2E170A),
+    tertiary = MamanAmberTertiary,
     onTertiary = Color.White,
-    tertiaryContainer = MamanLavenderContainer,
-    onTertiaryContainer = Color(0xFF281C3F),
+    tertiaryContainer = MamanAmberContainer,
+    onTertiaryContainer = Color(0xFF1E0E06),
     background = MamanBackgroundLight,
     surface = MamanSurfaceLight,
-    surfaceVariant = Color(0xFFF1EDE6)
+    surfaceVariant = MamanSurfaceVariant
 )
 
 @Composable
@@ -813,7 +815,7 @@ fun MamanBebeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = LightColorScheme // Soft calming theme optimized for maternal care
+    val colorScheme = LightColorScheme // Warm calming Caramel theme optimized for maternal care
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -899,6 +901,500 @@ object SampleDataGenerator {
                 notes = "Normal healthy newborn diaper"
             )
         )
+    }
+}`,
+  },
+  {
+    filename: 'LocaleHelper.kt',
+    category: 'localization',
+    description: 'Dynamic runtime language switcher supporting Android 13+ (Per-App Language Preferences) & legacy ContextWrapper',
+    code: `package com.maman.bebe.tracker.util
+
+import android.app.LocaleManager
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.res.Configuration
+import android.os.Build
+import android.os.LocaleList
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
+import java.util.Locale
+
+/**
+ * Clean Architecture utility managing dynamic runtime localization
+ * Compatible with Android 13+ (API 33) Per-App Language Preferences
+ * and backward-compatible with legacy ContextWrapper override.
+ */
+object LocaleHelper {
+
+    private const val PREFS_NAME = "maman_bebe_prefs"
+    private const val KEY_LANGUAGE = "selected_language"
+
+    val SUPPORTED_LOCALES = listOf("en", "fr", "es", "de", "pt", "ar", "it", "ja")
+
+    /**
+     * Dynamic runtime language switch.
+     * On Android 13+ (API 33), leverages system LocaleManager.
+     * On API < 33, leverages AppCompatDelegate.setApplicationLocales().
+     */
+    fun setLocale(context: Context, languageCode: String): Context {
+        persistLanguage(context, languageCode)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.getSystemService(LocaleManager::class.java)?.applicationLocales =
+                LocaleList(Locale.forLanguageTag(languageCode))
+            return context
+        } else {
+            // AndroidX Per-App Language Preferences backward compatibility
+            val appLocale = LocaleListCompat.forLanguageTags(languageCode)
+            AppCompatDelegate.setApplicationLocales(appLocale)
+            return updateResources(context, languageCode)
+        }
+    }
+
+    /**
+     * Called in Application.attachBaseContext() and Activity.attachBaseContext()
+     */
+    fun onAttach(context: Context): ContextWrapper {
+        val lang = getPersistedLanguage(context, Locale.getDefault().language)
+        return updateResources(context, lang)
+    }
+
+    private fun persistLanguage(context: Context, language: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_LANGUAGE, language).apply()
+    }
+
+    fun getPersistedLanguage(context: Context, defaultLanguage: String = "en"): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val saved = prefs.getString(KEY_LANGUAGE, defaultLanguage) ?: defaultLanguage
+        return if (saved in SUPPORTED_LOCALES) saved else "en"
+    }
+
+    private fun updateResources(context: Context, language: String): ContextWrapper {
+        val locale = Locale.forLanguageTag(language)
+        Locale.setDefault(locale)
+
+        val configuration = Configuration(context.resources.configuration)
+        configuration.setLocale(locale)
+        configuration.setLayoutDirection(locale)
+
+        val updatedContext = context.createConfigurationContext(configuration)
+        return ContextWrapper(updatedContext)
+    }
+
+    fun isRtl(languageCode: String): Boolean = languageCode == "ar"
+}`,
+  },
+  {
+    filename: 'strings.xml',
+    category: 'localization',
+    description: 'Default English (res/values/strings.xml) - Complete UI string resources & formatters',
+    code: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Maman &amp; bébé</string>
+    <string name="medical_disclaimer">Medical Notice: For informational purposes only; not a substitute for professional medical advice, diagnosis, or treatment.</string>
+    <string name="safety_guidelines">Safety Guidelines</string>
+    
+    <!-- Navigation Tabs -->
+    <string name="tab_pregnancy">Pregnancy</string>
+    <string name="tab_logger">Logger</string>
+    <string name="tab_baby_log">Baby Log</string>
+    <string name="tab_planning">Planning</string>
+    <string name="tab_guides">Guides</string>
+    
+    <!-- Pregnancy Counters -->
+    <string name="week_format">Week %1$d, Day %2$d</string>
+    <string name="days_remaining_format">%1$d days to go</string>
+    <string name="due_date_format">Due: %1$s</string>
+    <string name="twin_mode">Twin Mode</string>
+    <string name="single_mode">Single Baby</string>
+    
+    <!-- Kick Counter -->
+    <string name="kick_counter_title">Standard Fetal Kick Counter</string>
+    <string name="kick_goal_label">Goal: 10 Movements</string>
+    <string name="tap_to_kick">Tap to Kick</string>
+    <string name="goal_reached">10 Kicks Met!</string>
+    <string name="kicks_remaining">%1$d to target</string>
+    <string name="start_session">Start Session</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="reset">Reset</string>
+    <string name="save_kick_session">Save Kick Session to Record</string>
+    
+    <!-- Baby Logger -->
+    <string name="breastfeeding_timer">Breastfeeding Live Timer</string>
+    <string name="left_breast">Left Breast</string>
+    <string name="right_breast">Right Breast</string>
+    <string name="bottle_feeding">Bottle Feeding Logger</string>
+    <string name="expressed_milk">Expressed Milk</string>
+    <string name="formula_milk">Formula Bottle</string>
+    <string name="diaper_wet">Wet Diaper</string>
+    <string name="diaper_dirty">Dirty Diaper</string>
+    <string name="diaper_both">Both</string>
+    <string name="sleep_nap">Nap</string>
+    <string name="sleep_night">Night Sleep</string>
+    
+    <!-- Settings & i18n -->
+    <string name="settings_title">Pregnancy &amp; Baby Setup</string>
+    <string name="language_selection">App Language &amp; Localization</string>
+    <string name="unit_system">Unit System</string>
+    <string name="unit_metric">Metric (kg, cm, ml)</string>
+    <string name="unit_imperial">Imperial (lbs, in, oz)</string>
+</resources>`,
+  },
+  {
+    filename: 'strings-fr.xml',
+    category: 'localization',
+    description: 'French Localization (res/values-fr/strings.xml) - Complete localized resources',
+    code: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Maman &amp; bébé</string>
+    <string name="medical_disclaimer">Avis Médical : À titre informatif uniquement ; ne remplace pas un avis, diagnostic ou traitement médical professionnel.</string>
+    <string name="safety_guidelines">Consignes de sécurité</string>
+    
+    <!-- Navigation Tabs -->
+    <string name="tab_pregnancy">Grossesse</string>
+    <string name="tab_logger">Journal</string>
+    <string name="tab_baby_log">Bébé</string>
+    <string name="tab_planning">Outils</string>
+    <string name="tab_guides">Guides</string>
+    
+    <!-- Pregnancy Counters -->
+    <string name="week_format">Semaine %1$d, Jour %2$d</string>
+    <string name="days_remaining_format">%1$d jours restants</string>
+    <string name="due_date_format">Prévu le : %1$s</string>
+    <string name="twin_mode">Mode Jumeaux</string>
+    <string name="single_mode">Bébé Unique</string>
+    
+    <!-- Kick Counter -->
+    <string name="kick_counter_title">Compteur de mouvements fœtaux</string>
+    <string name="kick_goal_label">Objectif : 10 mouvements</string>
+    <string name="tap_to_kick">Toucher pour compter</string>
+    <string name="goal_reached">10 mouvements atteints !</string>
+    <string name="kicks_remaining">%1$d restants</string>
+    <string name="start_session">Démarrer</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Reprendre</string>
+    <string name="reset">Réinitialiser</string>
+    <string name="save_kick_session">Enregistrer la séance</string>
+    
+    <!-- Baby Logger -->
+    <string name="breastfeeding_timer">Minuteur Allaitement en direct</string>
+    <string name="left_breast">Sein Gauche</string>
+    <string name="right_breast">Sein Droit</string>
+    <string name="bottle_feeding">Enregistrer Biberon</string>
+    <string name="expressed_milk">Lait maternel exprimé</string>
+    <string name="formula_milk">Biberon préparation</string>
+    <string name="diaper_wet">Mouillée</string>
+    <string name="diaper_dirty">Selle</string>
+    <string name="diaper_both">Les deux</string>
+    <string name="sleep_nap">Sieste</string>
+    <string name="sleep_night">Nuit</string>
+    
+    <!-- Settings & i18n -->
+    <string name="settings_title">Configuration Maman &amp; bébé</string>
+    <string name="language_selection">Langue de l’application</string>
+    <string name="unit_system">Système d’unités</string>
+    <string name="unit_metric">Métrique (kg, cm, ml)</string>
+    <string name="unit_imperial">Impérial (lbs, in, oz)</string>
+</resources>`,
+  },
+  {
+    filename: 'strings-ar.xml',
+    category: 'localization',
+    description: 'Arabic Localization (res/values-ar/strings.xml) - Complete localized resources with RTL support',
+    code: `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مامان وبيبي</string>
+    <string name="medical_disclaimer">إشعار طبي: لأغراض إعلامية فقط؛ لا يعتبر بديلاً عن الاستشارة أو التشخيص الطبي المتخصص.</string>
+    <string name="safety_guidelines">إرشادات السلامة</string>
+    
+    <!-- Navigation Tabs -->
+    <string name="tab_pregnancy">الحمل</string>
+    <string name="tab_logger">السجل</string>
+    <string name="tab_baby_log">الطفل</string>
+    <string name="tab_planning">التخطيط</string>
+    <string name="tab_guides">الدلائل</string>
+    
+    <!-- Pregnancy Counters -->
+    <string name="week_format">الأسبوع %1$d، اليوم %2$d</string>
+    <string name="days_remaining_format">%1$d يوم متبقي</string>
+    <string name="due_date_format">الموعد المتوقع: %1$s</string>
+    <string name="twin_mode">وضع التوأم</string>
+    <string name="single_mode">طفل واحد</string>
+    
+    <!-- Kick Counter -->
+    <string name="kick_counter_title">عداد حركات وركلات الجنين</string>
+    <string name="kick_goal_label">الهدف: 10 حركات</string>
+    <string name="tap_to_kick">اضغط لتسجيل الركلة</string>
+    <string name="goal_reached">تم إكمال 10 ركلات!</string>
+    <string name="kicks_remaining">%1$d حركات متبقية</string>
+    <string name="start_session">بدء الجلسة</string>
+    <string name="pause">إيقاف مؤقت</string>
+    <string name="resume">متابعة</string>
+    <string name="reset">إعادة ضبط</string>
+    <string name="save_kick_session">حفظ جلسة الركلات</string>
+    
+    <!-- Baby Logger -->
+    <string name="breastfeeding_timer">مؤقت الرضاعة الطبيعية المباشر</string>
+    <string name="left_breast">الثدي الأيسر</string>
+    <string name="right_breast">الثدي الأيمن</string>
+    <string name="bottle_feeding">سجل الزجاجة</string>
+    <string name="expressed_milk">حليب طبيعي مشفوط</string>
+    <string name="formula_milk">حليب صناعي</string>
+    <string name="diaper_wet">مبلل</string>
+    <string name="diaper_dirty">براز</string>
+    <string name="diaper_both">كلاهما</string>
+    <string name="sleep_nap">قيلولة</string>
+    <string name="sleep_night">نوم ليلي</string>
+    
+    <!-- Settings & i18n -->
+    <string name="settings_title">إعدادات مامان وبيبي</string>
+    <string name="language_selection">لغة التطبيق</string>
+    <string name="unit_system">نظام القياس</string>
+    <string name="unit_metric">متري (كجم، سم، مل)</string>
+    <string name="unit_imperial">إمبراطوري (باوند، بوصة، أونصة)</string>
+</resources>`,
+  },
+  {
+    filename: 'locales_config.xml',
+    category: 'localization',
+    description: 'Android 13+ Per-App Language Preferences configuration (res/xml/locales_config.xml)',
+    code: `<?xml version="1.0" encoding="utf-8"?>
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en"/>
+    <locale android:name="fr"/>
+    <locale android:name="es"/>
+    <locale android:name="de"/>
+    <locale android:name="pt"/>
+    <locale android:name="ar"/>
+    <locale android:name="it"/>
+    <locale android:name="ja"/>
+</locale-config>`,
+  },
+  {
+    filename: 'GeminiAssistantService.kt',
+    category: 'ai_assistant',
+    description: 'Android Gemini Service for supportive, non-medical parenting guidance with week/baby age context',
+    code: `package com.maman.bebe.tracker.ai
+
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.content
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
+
+data class AssistantContext(
+    val stage: String, // "pregnancy" or "baby"
+    val week: Int,
+    val babyAge: String,
+    val isTwin: boolean,
+    val motherName: String,
+    val babyName: String,
+    val babyNameTwin: String?,
+    val languageCode: String
+)
+
+@Singleton
+class GeminiAssistantService @Inject constructor() {
+
+    // Using Gemini 3.8 Flash for fast, warm conversational parenting guidance
+    private val generativeModel = GenerativeModel(
+        modelName = "gemini-3.8-flash",
+        apiKey = BuildConfig.GEMINI_API_KEY
+    )
+
+    suspend fun sendGuidancePrompt(
+        userMessage: String,
+        context: AssistantContext,
+        chatHistory: List<Pair<String, String>> = emptyList()
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val systemInstruction = """
+                You are "Maman Assistant", a warm, empathetic, and knowledgeable parenting companion for expectant mothers and new parents in the Maman & bébé app.
+                
+                Current Context:
+                - Mother: \${context.motherName}
+                - Stage: \${context.stage} (Week \${context.week} or Baby Age \${context.babyAge})
+                - Children: \${if (context.isTwin) "\${context.babyName} & \${context.babyNameTwin}" else context.babyName}
+                - Language: \${context.languageCode}
+                
+                MANDATORY NON-MEDICAL SAFETY BOUNDARY:
+                - You offer supportive comfort, routine suggestions, soothing techniques, and evidence-based developmental facts.
+                - You NEVER provide medical diagnoses, treatment plans, or medication changes.
+                - For acute symptoms (vaginal bleeding, fever, vision changes, reduced kicks, infant distress), immediately urge the mother to contact her OB-GYN, pediatrician, or emergency care.
+            """.trimIndent()
+
+            val prompt = content {
+                text(systemInstruction)
+                chatHistory.forEach { (role, msg) ->
+                    text("\$role: \$msg")
+                }
+                text("User: \$userMessage")
+            }
+
+            val response = generativeModel.generateContent(prompt)
+            val reply = response.text ?: "I am here for you, mama. How can I support your day?"
+            Result.success(reply)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}`,
+  },
+  {
+    filename: 'MamanAssistantScreen.kt',
+    category: 'ai_assistant',
+    description: 'Jetpack Compose Material 3 chat screen with contextual chips, typing state, and safety notice',
+    code: `package com.maman.bebe.tracker.ui.assistant
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Sparkles
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.maman.bebe.tracker.R
+
+data class ChatMessage(val id: String, val isUser: Boolean, val text: String, val timestamp: Long)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MamanAssistantScreen(
+    currentWeek: Int,
+    isTwin: Boolean,
+    onBack: () -> Unit
+) {
+    var inputText by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val messages = remember { mutableStateListOf<ChatMessage>() }
+    val listState = rememberLazyListState()
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(text = "Maman Assistant", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            text = "Week \$currentWeek \${if (isTwin) "· Twin Journey" else ""} · Non-Medical Doula",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            // Safety Disclaimer Banner
+            Surface(
+                color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+                    Text(
+                        text = stringResource(R.string.medical_disclaimer),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
+            // Message Stream
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(messages) { msg ->
+                    ChatBubble(message = msg)
+                }
+            }
+
+            // Input Bar
+            Surface(
+                tonalElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { Text("Ask about Week \$currentWeek routines...") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    IconButton(
+                        onClick = {
+                            if (inputText.isNotBlank()) {
+                                messages.add(ChatMessage(id = "\${System.currentTimeMillis()}", isUser = true, text = inputText, timestamp = System.currentTimeMillis()))
+                                inputText = ""
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatBubble(message: ChatMessage) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (message.isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+            modifier = Modifier.widthIn(max = 280.dp)
+        ) {
+            Text(
+                text = message.text,
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (message.isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }`,
   },

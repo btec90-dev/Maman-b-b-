@@ -15,7 +15,7 @@ export const VisualBabyModel: React.FC<Props> = ({
   babyName = 'Baby',
   babyNameTwin = 'Baby B',
 }) => {
-  const [viewMode, setViewMode] = useState<'natural' | 'ultrasound' | 'skeletal'>('natural');
+  const [viewMode, setViewMode] = useState<'artistic' | 'natural' | 'ultrasound' | 'skeletal'>('artistic');
   const [rotationAngle, setRotationAngle] = useState(0);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [isPlayingHeartbeat, setIsPlayingHeartbeat] = useState(false);
@@ -140,7 +140,9 @@ export const VisualBabyModel: React.FC<Props> = ({
         {/* Soft Amniotic Fluid Radiant Glow */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
-            viewMode === 'ultrasound'
+            viewMode === 'artistic'
+              ? 'bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-200/50 via-amber-100/25 to-transparent dark:from-amber-950/30 dark:via-stone-900/50 dark:to-transparent'
+              : viewMode === 'ultrasound'
               ? 'bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-stone-800 via-stone-950 to-black opacity-95'
               : viewMode === 'skeletal'
               ? 'bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-indigo-950/60 via-stone-900 to-black opacity-90'
@@ -151,64 +153,140 @@ export const VisualBabyModel: React.FC<Props> = ({
         {/* Amniotic Membrane Boundary Ring */}
         <div
           className={`absolute w-64 h-64 rounded-full pointer-events-none transition-all duration-700 ${
-            viewMode === 'ultrasound'
+            viewMode === 'artistic'
+              ? 'border-2 border-amber-300/50 dark:border-amber-600/40 shadow-[0_0_50px_rgba(191,128,66,0.2)] animate-pulse'
+              : viewMode === 'ultrasound'
               ? 'border-2 border-stone-700/40 shadow-[0_0_40px_rgba(255,255,255,0.05)]'
               : 'border border-rose-300/40 dark:border-rose-700/20 shadow-[0_0_50px_rgba(244,162,97,0.15)] animate-pulse'
           }`}
           style={{ animationDuration: '4s' }}
         />
 
-        {/* Dynamic Fetal SVG Visual Representation with 3D Rotate Transform */}
-        <div
-          className="relative transition-transform duration-300 ease-out"
-          style={{
-            transform: `scale(${scale}) rotate(${rotationAngle}deg)`,
-          }}
-        >
-          {isTwin ? (
-            /* Twin Babies Render: Twin A and Twin B nestled together */
-            <div className="flex items-center justify-center -space-x-12">
-              {/* Twin A */}
-              <div className="transform -rotate-6">
-                <FetalSvgFigure week={weekData.week} viewMode={viewMode} isTwinSide="left" />
-                <span className="absolute bottom-2 left-6 text-[10px] font-semibold text-rose-500/80 bg-white/70 dark:bg-stone-800/80 px-1.5 py-0.5 rounded-full">
-                  Twin A
-                </span>
-              </div>
-              {/* Twin B */}
-              <div className="transform rotate-12 translate-y-3">
-                <FetalSvgFigure week={weekData.week} viewMode={viewMode} isTwinSide="right" />
-                <span className="absolute bottom-1 right-6 text-[10px] font-semibold text-rose-500/80 bg-white/70 dark:bg-stone-800/80 px-1.5 py-0.5 rounded-full">
-                  Twin B
-                </span>
-              </div>
-            </div>
-          ) : (
-            /* Single Baby Render */
-            <FetalSvgFigure week={weekData.week} viewMode={viewMode} />
-          )}
+        {/* Visual Content: Either Artistic Illustration or 3D Dynamic SVG */}
+        {viewMode === 'artistic' ? (
+          <div className="relative flex items-center justify-center">
+            {isTwin ? (
+              <div className="flex items-center justify-center -space-x-8">
+                {/* Twin A artistic belly */}
+                <div
+                  className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full overflow-hidden border-2 border-amber-300/60 dark:border-amber-600/50 shadow-[0_0_40px_rgba(191,128,66,0.3)] transition-transform duration-300"
+                  style={{ transform: `scale(${scale * 0.9}) rotate(${rotationAngle - 6}deg)` }}
+                >
+                  <img
+                    src="/src/assets/images/baby_in_belly_1793579983507.jpg"
+                    alt={`Artistic baby in belly - Twin A (Week ${weekData.week})`}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-amber-500/10 pointer-events-none" />
+                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-amber-200 bg-stone-900/80 backdrop-blur-xs px-2 py-0.5 rounded-full border border-amber-500/30 whitespace-nowrap">
+                    Twin A · {babyName}
+                  </span>
+                </div>
 
-          {/* Ultrasound Biometric Calipers Overlay */}
-          {viewMode === 'ultrasound' && (
-            <div className="absolute inset-0 pointer-events-none font-mono text-[9px] text-emerald-400/90">
-              <div className="absolute top-2 left-2 flex items-center gap-1">
-                <span>+ CRL: {weekData.lengthCm}cm</span>
+                {/* Twin B artistic belly */}
+                <div
+                  className="relative w-44 h-44 sm:w-52 sm:h-52 rounded-full overflow-hidden border-2 border-amber-300/60 dark:border-amber-600/50 shadow-[0_0_40px_rgba(191,128,66,0.3)] transition-transform duration-300"
+                  style={{ transform: `scale(${scale * 0.9}) rotate(${rotationAngle + 8}deg)` }}
+                >
+                  <img
+                    src="/src/assets/images/baby_in_belly_1793579983507.jpg"
+                    alt={`Artistic baby in belly - Twin B (Week ${weekData.week})`}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover transform -scale-x-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-amber-500/10 pointer-events-none" />
+                  <span className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-semibold text-amber-200 bg-stone-900/80 backdrop-blur-xs px-2 py-0.5 rounded-full border border-amber-500/30 whitespace-nowrap">
+                    Twin B · {babyNameTwin}
+                  </span>
+                </div>
               </div>
-              <div className="absolute bottom-2 right-2 flex items-center gap-1">
-                <span>+ EFW: {weekData.weightG}g</span>
+            ) : (
+              /* Single baby artistic belly */
+              <div
+                className="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden border-2 border-amber-300/70 dark:border-amber-600/60 shadow-[0_0_50px_rgba(191,128,66,0.25)] transition-transform duration-300"
+                style={{ transform: `scale(${scale}) rotate(${rotationAngle}deg)` }}
+              >
+                <img
+                  src="/src/assets/images/baby_in_belly_1793579983507.jpg"
+                  alt={`Artistic baby in belly illustration for Week ${weekData.week}`}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-amber-500/10 pointer-events-none" />
+                <div className="absolute bottom-2.5 inset-x-0 flex justify-center pointer-events-none">
+                  <span className="text-[10px] font-semibold tracking-wide bg-stone-900/80 backdrop-blur-md text-amber-200 px-3 py-0.5 rounded-full border border-amber-500/30 flex items-center gap-1 shadow-xs">
+                    <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+                    <span>Week {weekData.week} · Artistic Belly View</span>
+                  </span>
+                </div>
               </div>
-              {/* Sonogram Grid Crosshairs */}
-              <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-emerald-500/20" />
-              <div className="absolute inset-y-0 left-1/2 border-l border-dashed border-emerald-500/20" />
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          /* Dynamic Fetal SVG Visual Representation with 3D Rotate Transform */
+          <div
+            className="relative transition-transform duration-300 ease-out"
+            style={{
+              transform: `scale(${scale}) rotate(${rotationAngle}deg)`,
+            }}
+          >
+            {isTwin ? (
+              /* Twin Babies Render: Twin A and Twin B nestled together */
+              <div className="flex items-center justify-center -space-x-12">
+                {/* Twin A */}
+                <div className="transform -rotate-6">
+                  <FetalSvgFigure week={weekData.week} viewMode={viewMode} isTwinSide="left" />
+                  <span className="absolute bottom-2 left-6 text-[10px] font-semibold text-rose-500/80 bg-white/70 dark:bg-stone-800/80 px-1.5 py-0.5 rounded-full">
+                    Twin A
+                  </span>
+                </div>
+                {/* Twin B */}
+                <div className="transform rotate-12 translate-y-3">
+                  <FetalSvgFigure week={weekData.week} viewMode={viewMode} isTwinSide="right" />
+                  <span className="absolute bottom-1 right-6 text-[10px] font-semibold text-rose-500/80 bg-white/70 dark:bg-stone-800/80 px-1.5 py-0.5 rounded-full">
+                    Twin B
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* Single Baby Render */
+              <FetalSvgFigure week={weekData.week} viewMode={viewMode} />
+            )}
+
+            {/* Ultrasound Biometric Calipers Overlay */}
+            {viewMode === 'ultrasound' && (
+              <div className="absolute inset-0 pointer-events-none font-mono text-[9px] text-emerald-400/90">
+                <div className="absolute top-2 left-2 flex items-center gap-1">
+                  <span>+ CRL: {weekData.lengthCm}cm</span>
+                </div>
+                <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                  <span>+ EFW: {weekData.weightG}g</span>
+                </div>
+                {/* Sonogram Grid Crosshairs */}
+                <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-emerald-500/20" />
+                <div className="absolute inset-y-0 left-1/2 border-l border-dashed border-emerald-500/20" />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Interactive Controls Bar: View Modes, Rotation, Zoom */}
       <div className="px-4 py-3 bg-white/70 dark:bg-stone-900/80 backdrop-blur-md border-t border-stone-200/70 dark:border-stone-800 flex flex-wrap items-center justify-between gap-2 text-xs">
         {/* Layer Mode Switcher */}
         <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-1 rounded-xl">
+          <button
+            onClick={() => setViewMode('artistic')}
+            className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1 ${
+              viewMode === 'artistic'
+                ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                : 'text-stone-600 dark:text-stone-400 hover:text-stone-900'
+            }`}
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>Artistic Belly</span>
+          </button>
           <button
             onClick={() => setViewMode('natural')}
             className={`px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer ${

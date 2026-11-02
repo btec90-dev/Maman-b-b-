@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserProfile, CalculationMethod, BabyMode } from '../types';
-import { Calendar, X, Sparkles, Baby, Users, Heart } from 'lucide-react';
+import { SupportedLanguage, UnitSystem, SUPPORTED_LANGUAGES, TRANSLATIONS } from '../i18n/translations';
+import { Calendar, X, Sparkles, Baby, Users, Heart, Globe, Scale } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -23,8 +24,12 @@ export const DueDatePickerModal: React.FC<Props> = ({
   const [dueDate, setDueDate] = useState(profile.dueDate);
   const [inputDate, setInputDate] = useState(profile.lmpDate || profile.dueDate);
   const [activeStage, setActiveStage] = useState<'pregnancy' | 'baby'>(profile.activeStage);
+  const [language, setLanguage] = useState<SupportedLanguage>(profile.language || 'en');
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(profile.unitSystem || 'imperial');
 
   if (!isOpen) return null;
+
+  const t = TRANSLATIONS[language]?.settingsModal || TRANSLATIONS.en.settingsModal;
 
   // Real-time calculation based on method
   const handleCalculateDate = (dateVal: string, method: CalculationMethod) => {
@@ -63,6 +68,8 @@ export const DueDatePickerModal: React.FC<Props> = ({
       lmpDate: calcMethod === 'lmp' ? inputDate : profile.lmpDate,
       conceptionDate: calcMethod === 'conception' ? inputDate : profile.conceptionDate,
       activeStage,
+      language,
+      unitSystem,
     });
     onClose();
   };
@@ -78,9 +85,9 @@ export const DueDatePickerModal: React.FC<Props> = ({
             </div>
             <div>
               <h3 className="font-bold text-stone-900 dark:text-stone-100 text-base">
-                Pregnancy &amp; Baby Setup
+                {t.title}
               </h3>
-              <p className="text-xs text-stone-500">Customize your due date &amp; mode anytime</p>
+              <p className="text-xs text-stone-500">{t.subtitle}</p>
             </div>
           </div>
           <button
@@ -92,10 +99,67 @@ export const DueDatePickerModal: React.FC<Props> = ({
         </div>
 
         <div className="mt-5 space-y-5 text-xs">
+          {/* Dynamic Language Selection Grid */}
+          <div>
+            <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-rose-500" />
+              <span>{t.language}</span>
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {SUPPORTED_LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => setLanguage(lang.code)}
+                  className={`py-2 px-2 rounded-xl text-[11px] font-semibold flex items-center gap-1.5 justify-center border cursor-pointer transition-all ${
+                    language === lang.code
+                      ? 'bg-rose-50 dark:bg-rose-950/80 border-rose-400 text-rose-800 dark:text-rose-200 shadow-xs'
+                      : 'bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:bg-stone-100'
+                  }`}
+                >
+                  <span>{lang.flag}</span>
+                  <span className="truncate">{lang.nativeName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Unit System Selector (Imperial vs Metric) */}
+          <div>
+            <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
+              <Scale className="w-3.5 h-3.5 text-rose-500" />
+              <span>{t.units}</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setUnitSystem('metric')}
+                className={`py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                  unitSystem === 'metric'
+                    ? 'bg-white dark:bg-stone-700 text-rose-600 dark:text-rose-300 shadow-xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                }`}
+              >
+                <span>{t.metric}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUnitSystem('imperial')}
+                className={`py-2 px-3 rounded-lg font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                  unitSystem === 'imperial'
+                    ? 'bg-white dark:bg-stone-700 text-rose-600 dark:text-rose-300 shadow-xs'
+                    : 'text-stone-600 dark:text-stone-400 hover:text-stone-900'
+                }`}
+              >
+                <span>{t.imperial}</span>
+              </button>
+            </div>
+          </div>
+
           {/* Active Stage Toggle: Pregnancy vs Newborn / Baby */}
           <div>
             <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-              Active Stage
+              {t.activeStage}
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
               <button
@@ -108,7 +172,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
                 }`}
               >
                 <Heart className="w-3.5 h-3.5" />
-                <span>Pregnancy Journey</span>
+                <span>{t.pregnancyJourney}</span>
               </button>
               <button
                 type="button"
@@ -120,7 +184,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
                 }`}
               >
                 <Baby className="w-3.5 h-3.5" />
-                <span>Baby &amp; Postpartum</span>
+                <span>{t.babyPostpartum}</span>
               </button>
             </div>
           </div>
@@ -128,7 +192,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
           {/* Single Baby vs. Twin Mode Toggle */}
           <div>
             <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-              Pregnancy Mode
+              {t.mode}
             </label>
             <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl">
               <button
@@ -141,7 +205,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
                 }`}
               >
                 <Baby className="w-3.5 h-3.5" />
-                <span>Single Baby</span>
+                <span>{t.single}</span>
               </button>
               <button
                 type="button"
@@ -153,7 +217,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
                 }`}
               >
                 <Users className="w-3.5 h-3.5" />
-                <span>Twin Mode (2x)</span>
+                <span>{t.twin}</span>
               </button>
             </div>
           </div>
@@ -162,7 +226,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-medium text-stone-600 dark:text-stone-400 mb-1">
-                Mother&apos;s Name
+                {t.motherName}
               </label>
               <input
                 type="text"
@@ -174,7 +238,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
             </div>
             <div>
               <label className="block font-medium text-stone-600 dark:text-stone-400 mb-1">
-                {babyMode === 'twin' ? 'Baby A Name' : "Baby's Nickname / Name"}
+                {babyMode === 'twin' ? 'Baby A' : t.babyName}
               </label>
               <input
                 type="text"
@@ -189,7 +253,7 @@ export const DueDatePickerModal: React.FC<Props> = ({
           {babyMode === 'twin' && (
             <div>
               <label className="block font-medium text-stone-600 dark:text-stone-400 mb-1">
-                Baby B Name
+                {t.babyNameTwin}
               </label>
               <input
                 type="text"
@@ -204,11 +268,11 @@ export const DueDatePickerModal: React.FC<Props> = ({
           {/* Calculation Method */}
           <div>
             <label className="block font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-              Due Date Calculation Method
+              {t.calculationMethod}
             </label>
             <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100 dark:bg-stone-800 rounded-xl mb-3">
               {[
-                { id: 'lmp' as CalculationMethod, label: 'Last Period (LMP)' },
+                { id: 'lmp' as CalculationMethod, label: 'LMP (Last Period)' },
                 { id: 'conception' as CalculationMethod, label: 'Conception Date' },
                 { id: 'ultrasound' as CalculationMethod, label: 'Ultrasound Dating' },
                 { id: 'due_date' as CalculationMethod, label: 'Known Due Date' },
@@ -268,14 +332,14 @@ export const DueDatePickerModal: React.FC<Props> = ({
             onClick={onClose}
             className="px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl text-xs font-semibold cursor-pointer transition-colors"
           >
-            Cancel
+            {t.cancel}
           </button>
           <button
             type="button"
             onClick={handleSave}
             className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer transition-colors"
           >
-            Save Preferences
+            {t.save}
           </button>
         </div>
       </div>

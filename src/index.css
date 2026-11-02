@@ -1,9 +1,37 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --color-caramel-50: #fdf8f3;
+  --color-caramel-100: #f8ede0;
+  --color-caramel-200: #f0dac1;
+  --color-caramel-300: #e4bf98;
+  --color-caramel-400: #d29e67;
+  --color-caramel-500: #bf8042;
+  --color-caramel-600: #a96831;
+  --color-caramel-700: #8b5027;
+  --color-caramel-800: #724124;
+  --color-caramel-900: #5d361f;
+  --color-caramel-950: #341b0e;
+
+  /* Re-tune rose palette to warm caramel & toffee so all existing UI tokens become caramel */
+  --color-rose-50: #fdf8f3;
+  --color-rose-100: #f8ede0;
+  --color-rose-200: #f0dac1;
+  --color-rose-300: #e4bf98;
+  --color-rose-400: #d29e67;
+  --color-rose-500: #bf8042;
+  --color-rose-600: #a96831;
+  --color-rose-700: #8b5027;
+  --color-rose-800: #724124;
+  --color-rose-900: #5d361f;
+  --color-rose-950: #341b0e;
+}
+
 @layer base {
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #faf5ee;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -23,4 +51,49 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(150, 150, 150, 0.4);
+}
+
+/* Print / PDF-ready styles for journal export */
+@media print {
+  @page {
+    margin: 15mm;
+    size: A4 portrait;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #1c1917 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #journal-print-section,
+  #journal-print-section * {
+    visibility: visible;
+  }
+
+  #journal-print-section {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #1c1917 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-entry-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    border-color: #e7e5e4 !important;
+    background: #ffffff !important;
+  }
 }

@@ -6,12 +6,14 @@ interface Props {
   isDeviceFrame: boolean;
   onToggleFrame: () => void;
   brandTitle?: string;
+  isRtl?: boolean;
 }
 
 export const PhoneFrame: React.FC<Props> = ({
   children,
   isDeviceFrame,
   onToggleFrame,
+  isRtl = false,
 }) => {
   const [time, setTime] = useState('09:41');
 
@@ -27,7 +29,12 @@ export const PhoneFrame: React.FC<Props> = ({
 
   if (!isDeviceFrame) {
     return (
-      <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col">
+      <div
+        dir={isRtl ? 'rtl' : 'ltr'}
+        className={`w-full min-h-screen bg-[#FAF5EE] dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col ${
+          isRtl ? 'text-right' : 'text-left'
+        }`}
+      >
         {children}
       </div>
     );
@@ -53,7 +60,7 @@ export const PhoneFrame: React.FC<Props> = ({
       </div>
 
       {/* Realistic Pixel Smartphone Chassis */}
-      <div className="relative w-full max-w-[412px] h-[870px] bg-[#FAF8F5] dark:bg-stone-950 rounded-[48px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_12px_#1c1917,0_0_0_14px_#292524] overflow-hidden flex flex-col border border-stone-800/50">
+      <div className="relative w-full max-w-[412px] h-[870px] bg-[#FAF5EE] dark:bg-stone-950 rounded-[48px] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_12px_#1c1917,0_0_0_14px_#292524] overflow-hidden flex flex-col border border-stone-800/50">
         {/* Top Status Bar */}
         <div className="relative z-30 shrink-0 h-11 px-6 pt-2 flex items-center justify-between text-xs font-medium text-stone-700 dark:text-stone-300 select-none bg-inherit">
           <span className="tracking-tight text-[13px] font-semibold">{time}</span>
@@ -74,7 +81,12 @@ export const PhoneFrame: React.FC<Props> = ({
         </div>
 
         {/* Scrollable Device App Screen Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col relative">
+        <div
+          dir={isRtl ? 'rtl' : 'ltr'}
+          className={`flex-1 overflow-y-auto overflow-x-hidden flex flex-col relative ${
+            isRtl ? 'text-right' : 'text-left'
+          }`}
+        >
           {children}
         </div>
 

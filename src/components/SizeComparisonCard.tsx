@@ -7,6 +7,7 @@ interface Props {
   currentTheme: SizeTheme;
   onSelectTheme: (theme: SizeTheme) => void;
   isTwin: boolean;
+  unitSystem?: 'imperial' | 'metric';
 }
 
 export const SizeComparisonCard: React.FC<Props> = ({
@@ -14,6 +15,7 @@ export const SizeComparisonCard: React.FC<Props> = ({
   currentTheme,
   onSelectTheme,
   isTwin,
+  unitSystem = 'imperial',
 }) => {
   const currentSize = weekData.sizes[currentTheme];
 
@@ -27,6 +29,8 @@ export const SizeComparisonCard: React.FC<Props> = ({
   // In twin mode, total combined weight
   const displayWeightG = isTwin ? Math.round(weekData.weightG * 1.95) : weekData.weightG;
   const displayWeightOz = isTwin ? (weekData.weightOz * 1.95).toFixed(1) : weekData.weightOz;
+
+  const isMetric = unitSystem === 'metric';
 
   return (
     <div className="w-full bg-white dark:bg-stone-900 rounded-3xl p-5 border border-stone-200/80 dark:border-stone-800 shadow-xs transition-colors">
@@ -83,10 +87,10 @@ export const SizeComparisonCard: React.FC<Props> = ({
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
-              {weekData.lengthIn}&quot;
+              {isMetric ? `${weekData.lengthCm} cm` : `${weekData.lengthIn}"`}
             </span>
             <span className="text-xs text-stone-500 font-mono tabular-nums">
-              ({weekData.lengthCm} cm)
+              ({isMetric ? `${weekData.lengthIn}"` : `${weekData.lengthCm} cm`})
             </span>
           </div>
           <span className="text-[10px] text-stone-400 block mt-0.5">
@@ -102,10 +106,18 @@ export const SizeComparisonCard: React.FC<Props> = ({
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-xl font-bold text-stone-900 dark:text-stone-100 font-mono tabular-nums">
-              {displayWeightOz} oz
+              {isMetric
+                ? displayWeightG >= 1000
+                  ? `${(displayWeightG / 1000).toFixed(2)} kg`
+                  : `${displayWeightG} g`
+                : `${displayWeightOz} oz`}
             </span>
             <span className="text-xs text-stone-500 font-mono tabular-nums">
-              ({displayWeightG >= 1000 ? `${(displayWeightG / 1000).toFixed(2)} kg` : `${displayWeightG} g`})
+              ({isMetric
+                ? `${displayWeightOz} oz`
+                : displayWeightG >= 1000
+                ? `${(displayWeightG / 1000).toFixed(2)} kg`
+                : `${displayWeightG} g`})
             </span>
           </div>
           <span className="text-[10px] text-stone-400 block mt-0.5">
