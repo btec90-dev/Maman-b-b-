@@ -187,3 +187,29 @@ export interface DoctorVisitChecklist {
   }>;
   suggestedQuestions: string[];
 }
+
+export interface MilestonePhoto {
+  id: string;
+  weekNumber: number;
+  date: string; // ISO YYYY-MM-DD
+  type: 'bump' | 'ultrasound' | 'nursery' | 'celebration';
+  photoUrl: string;
+  notes?: string;
+  filterApplied?: 'none' | 'caramel' | 'rose' | 'vintage' | 'bw' | 'vivid';
+  textOverlay?: string;
+  aspectRatio?: '1:1' | '4:5' | '9:16';
+  tags: string[];
+}
+
+export type CalendarCategory = 'journal' | 'appointment';
+
+export interface CalendarScheduleEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time?: string; // HH:mm or e.g. "10:30 AM"
+  category: CalendarCategory;
+  notes?: string;
+  completed?: boolean;
+  createdAt: number;
+}

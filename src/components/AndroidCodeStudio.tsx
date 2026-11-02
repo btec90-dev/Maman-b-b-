@@ -13,15 +13,16 @@ import {
   FileText,
 } from 'lucide-react';
 
-type FileCategoryFilter = 'all' | 'localization' | 'ai_assistant' | 'compose_ui' | 'room' | 'viewmodel' | 'manifest';
+type FileCategoryFilter = 'all' | 'camera_photos' | 'localization' | 'ai_assistant' | 'compose_ui' | 'room' | 'viewmodel' | 'manifest';
 
 export const AndroidCodeStudio: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<FileCategoryFilter>('all');
-  const [selectedFilename, setSelectedFilename] = useState<string>('GeminiAssistantService.kt');
+  const [selectedFilename, setSelectedFilename] = useState<string>('BumpGuideCameraScreen.kt');
   const [copied, setCopied] = useState(false);
 
   const filteredFiles = ANDROID_CODE_FILES.filter((f) => {
     if (selectedCategory === 'all') return true;
+    if (selectedCategory === 'camera_photos') return f.category === 'camera_photos' || f.filename.includes('Photo') || f.filename.includes('Camera') || f.filename.includes('Share');
     if (selectedCategory === 'localization') return f.category === 'localization';
     if (selectedCategory === 'ai_assistant') return f.category === 'ai_assistant';
     if (selectedCategory === 'compose_ui') return f.category === 'compose_ui';
@@ -113,6 +114,7 @@ export const AndroidCodeStudio: React.FC = () => {
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
           {[
             { id: 'all' as const, label: `All Files (${ANDROID_CODE_FILES.length})` },
+            { id: 'camera_photos' as const, label: 'Camera & Milestone Photos (4)' },
             { id: 'ai_assistant' as const, label: 'Gemini Assistant AI (2)' },
             { id: 'localization' as const, label: 'Localization & i18n (5)' },
             { id: 'compose_ui' as const, label: 'Jetpack Compose UI (2)' },
@@ -126,6 +128,7 @@ export const AndroidCodeStudio: React.FC = () => {
                 setSelectedCategory(cat.id);
                 const firstInCat = ANDROID_CODE_FILES.find((f) => {
                   if (cat.id === 'all') return true;
+                  if (cat.id === 'camera_photos') return f.category === 'camera_photos' || f.filename.includes('Photo') || f.filename.includes('Camera') || f.filename.includes('Share');
                   if (cat.id === 'ai_assistant') return f.category === 'ai_assistant';
                   if (cat.id === 'localization') return f.category === 'localization';
                   if (cat.id === 'compose_ui') return f.category === 'compose_ui';

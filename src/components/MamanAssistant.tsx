@@ -14,7 +14,11 @@ import {
   Lightbulb,
   Info,
   X,
+  Calendar,
 } from 'lucide-react';
+import { AssistantBottomCalendar, toISODate } from './AssistantBottomCalendar';
+import { CalendarScheduleEvent } from '../types';
+import { parseCalendarIntent, formatDaySummaryText } from '../utils/calendarIntentParser';
 
 interface ChatMessage {
   id: string;
@@ -34,6 +38,10 @@ interface Props {
   language?: string;
   onClose?: () => void;
   isModal?: boolean;
+  calendarEvents?: CalendarScheduleEvent[];
+  onAddCalendarEvent?: (event: Omit<CalendarScheduleEvent, 'id' | 'createdAt'>) => void;
+  onUpdateCalendarEvent?: (event: CalendarScheduleEvent) => void;
+  onDeleteCalendarEvent?: (id: string) => void;
 }
 
 export const MamanAssistant: React.FC<Props> = ({
@@ -47,6 +55,10 @@ export const MamanAssistant: React.FC<Props> = ({
   language = 'en',
   onClose,
   isModal = false,
+  calendarEvents: propsCalendarEvents,
+  onAddCalendarEvent: propsOnAddCalendarEvent,
+  onUpdateCalendarEvent: propsOnUpdateCalendarEvent,
+  onDeleteCalendarEvent: propsOnDeleteCalendarEvent,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const saved = localStorage.getItem('maman_assistant_chat');
@@ -79,22 +91,153 @@ export const MamanAssistant: React.FC<Props> = ({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
 
+  // Calendar State & Persistence
+  const [internalCalendarEvents, setInternalCalendarEvents] = useState<CalendarScheduleEvent[]>(() => {
+    const saved = localStorage.getItem('maman_assistant_calendar_events');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    const today = new Date();
+    const dToday = toISODate(today);
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    const dTomorrow = toISODate(tmrw);
+    const in3Days = new Date();
+    in3Days.setDate(in3Days.getDate() + 3);
+    const dIn3Days = toISODate(in3Days);
+
+    return [
+      {
+        id: 'seed-1',
+        title: 'Pediatrician 4-Month Checkup & Measurements',
+        date: dToday,
+        time: '10:30 AM',
+        category: 'appointment',
+        notes: 'Prepare questions about tummy time progress and solid food introduction window.',
+        completed: false,
+        createdAt: Date.now() - 86400000,
+      },
+      {
+        id: 'seed-2',
+        title: 'Evening Gratitude & Baby Milestone Reflection',
+        date: dToday,
+        time: '08:30 PM',
+        category: 'journal',
+        notes: 'Baby smiled intentionally after bathtime! Mom feeling more energized today.',
+        completed: true,
+        createdAt: Date.now() - 43200000,
+      },
+      {
+        id: 'seed-3',
+        title: 'Baby Recommended Vaccines & Health Booster',
+        date: dTomorrow,
+        time: '11:00 AM',
+        category: 'appointment',
+        notes: 'Bring vaccination yellow card and favorite soothing swaddle.',
+        completed: false,
+        createdAt: Date.now(),
+      },
+      {
+        id: 'seed-4',
+        title: 'Weekly Bump Snapshot & Mom Recovery Check',
+        date: dIn3Days,
+        time: '09:00 AM',
+        category: 'journal',
+        notes: 'Capture weekly milestone photo and check in on hydration.',
+        completed: false,
+        createdAt: Date.now(),
+      },
+    ];
+  });
+
+  const calendarEvents = propsCalendarEvents ?? internalCalendarEvents;
+
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string>(() =>
+    toISODate(new Date())
+  );
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync to local storage
+  // Sync chat messages to local storage
   useEffect(() => {
     localStorage.setItem('maman_assistant_chat', JSON.stringify(messages));
   }, [messages]);
+
+  // Sync calendar events to local storage if internal
+  useEffect(() => {
+    if (!propsCalendarEvents) {
+      localStorage.setItem(
+        'maman_assistant_calendar_events',
+        JSON.stringify(internalCalendarEvents)
+      );
+    }
+  }, [internalCalendarEvents, propsCalendarEvents]);
 
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Calendar handlers
+  const handleAddCalendarEvent = (
+    eventData: Omit<CalendarScheduleEvent, 'id' | 'createdAt'>
+  ) => {
+    if (propsOnAddCalendarEvent) {
+      propsOnAddCalendarEvent(eventData);
+    } else {
+      const newEvent: CalendarScheduleEvent = {
+        ...eventData,
+        id: `evt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        createdAt: Date.now(),
+      };
+      setInternalCalendarEvents((prev) => [newEvent, ...prev]);
+    }
+  };
+
+  const handleUpdateCalendarEvent = (updated: CalendarScheduleEvent) => {
+    if (propsOnUpdateCalendarEvent) {
+      propsOnUpdateCalendarEvent(updated);
+    } else {
+      setInternalCalendarEvents((prev) =>
+        prev.map((ev) => (ev.id === updated.id ? updated : ev))
+      );
+    }
+  };
+
+  const handleDeleteCalendarEvent = (id: string) => {
+    if (propsOnDeleteCalendarEvent) {
+      propsOnDeleteCalendarEvent(id);
+    } else {
+      setInternalCalendarEvents((prev) => prev.filter((ev) => ev.id !== id));
+    }
+  };
+
+  const handleRequestDaySummary = () => {
+    const summaryMsg = formatDaySummaryText(
+      selectedCalendarDate,
+      calendarEvents,
+      motherName || 'Mama'
+    );
+    const assistantMsg: ChatMessage = {
+      id: `summary-${Date.now()}`,
+      role: 'model',
+      content: summaryMsg,
+      timestamp: Date.now(),
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
+  };
+
   // Context-specific suggested prompt chips
-  const suggestedPrompts =
-    stage === 'pregnancy'
+  const suggestedPrompts = [
+    'What does my day look like?',
+    'Schedule pediatrician visit tomorrow at 10 AM',
+    'Add journal entry for baby milestone tonight',
+    ...(stage === 'pregnancy'
       ? [
           `Relieving lower back pressure in Week ${currentWeek}`,
           'Hospital bag essentials checklist for mama & baby',
@@ -102,7 +245,6 @@ export const MamanAssistant: React.FC<Props> = ({
           isTwin
             ? 'Twin pregnancy nutrition & resting strategies'
             : 'Comfortable sleeping positions with a growing bump',
-          'Self-care ideas for mom during the second trimester',
         ]
       : [
           'Gentle soothing techniques for an overtired newborn',
@@ -110,9 +252,8 @@ export const MamanAssistant: React.FC<Props> = ({
           isTwin
             ? 'Coordinating feedings for twins: tips & schedules'
             : 'Signs baby is going through a growth spurt',
-          'Postpartum recovery & gentle pelvic floor care for mom',
-          'Ways to balance newborn sleep and partner shifts',
-        ];
+        ]),
+  ];
 
   const handleSend = async (messageText?: string) => {
     const textToSend = (messageText || input).trim();
@@ -127,8 +268,55 @@ export const MamanAssistant: React.FC<Props> = ({
 
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setLoading(true);
     setApiError(null);
+
+    // Natural Language Intent Parsing for Calendar
+    const parsedIntent = parseCalendarIntent(textToSend);
+
+    // Case 1: User asks "What does my day look like?"
+    if (parsedIntent.type === 'schedule_summary') {
+      const targetDate = parsedIntent.targetDate || selectedCalendarDate;
+      setSelectedCalendarDate(targetDate);
+      const summaryText = formatDaySummaryText(
+        targetDate,
+        calendarEvents,
+        motherName || 'Mama'
+      );
+
+      const assistantMsg: ChatMessage = {
+        id: `assistant-summary-${Date.now()}`,
+        role: 'model',
+        content: summaryText,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+      return;
+    }
+
+    // Case 2: User mentions adding a task, appointment, or journal entry
+    if (parsedIntent.type === 'add_event' && parsedIntent.event) {
+      handleAddCalendarEvent(parsedIntent.event);
+      setSelectedCalendarDate(parsedIntent.event.date);
+
+      const categoryLabel =
+        parsedIntent.event.category === 'appointment' ? '🩺 Appointment' : '📝 Journal Event';
+
+      const confirmationText = `✅ **Added to your calendar!**\n\n• **Item:** ${parsedIntent.event.title}\n• **Category:** ${categoryLabel}\n• **Date:** ${parsedIntent.event.date}\n• **Time:** ${parsedIntent.event.time || 'All Day'}\n\nI have visually updated your interactive schedule block at the bottom of our screen. You can tap the date anytime to view, edit, or adjust this entry! 🌸`;
+
+      const assistantMsg: ChatMessage = {
+        id: `assistant-add-${Date.now()}`,
+        role: 'model',
+        content: confirmationText,
+        timestamp: Date.now(),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
+      return;
+    }
+
+    // Case 3: General parenting / pregnancy guidance via Gemini API
+    setLoading(true);
 
     try {
       const historyPayload = messages
@@ -284,7 +472,7 @@ export const MamanAssistant: React.FC<Props> = ({
 
   return (
     <div className={`flex flex-col bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 shadow-sm overflow-hidden ${
-      isModal ? 'h-[600px] max-h-[85vh]' : 'min-h-[560px]'
+      isModal ? 'h-[740px] max-h-[92vh]' : 'min-h-[640px]'
     }`}>
       {/* Assistant Header */}
       <div className="p-4 bg-gradient-to-r from-rose-50/80 via-white to-purple-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-stone-800/80 border-b border-stone-200/60 dark:border-stone-800 flex items-center justify-between shrink-0">
@@ -477,6 +665,19 @@ export const MamanAssistant: React.FC<Props> = ({
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </button>
         </form>
+      </div>
+
+      {/* Interactive Bottom Editable Calendar Component */}
+      <div className="shrink-0">
+        <AssistantBottomCalendar
+          events={calendarEvents}
+          onAddEvent={handleAddCalendarEvent}
+          onUpdateEvent={handleUpdateCalendarEvent}
+          onDeleteEvent={handleDeleteCalendarEvent}
+          selectedDate={selectedCalendarDate}
+          onSelectDate={setSelectedCalendarDate}
+          onRequestDaySummary={handleRequestDaySummary}
+        />
       </div>
     </div>
   );

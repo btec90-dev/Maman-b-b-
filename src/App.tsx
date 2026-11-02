@@ -22,6 +22,8 @@ import {
   JournalEntry,
   VaccineInfo,
   DoctorVisitChecklist,
+  MilestonePhoto,
+  CalendarScheduleEvent,
 } from './types';
 import { PREGNANCY_WEEKS, DEFAULT_WEEK_LIST } from './data/pregnancyWeeksData';
 import { INITIAL_MILESTONES } from './data/milestonesData';
@@ -43,11 +45,15 @@ import { MyJournal } from './components/MyJournal';
 import { KnowledgeBase } from './components/KnowledgeBase';
 import { AndroidCodeStudio } from './components/AndroidCodeStudio';
 import { MamanAssistant } from './components/MamanAssistant';
+import { MilestonePhotoStudio } from './components/MilestonePhotoStudio';
+import { CalendarTab } from './components/CalendarTab';
+import { toISODate } from './components/AssistantBottomCalendar';
 
 import {
   Heart,
   Baby,
   Calendar,
+  CalendarDays,
   Activity,
   CheckSquare,
   BookOpen,
@@ -62,6 +68,7 @@ import {
   Clock,
   Award,
   ChevronLeft,
+  Camera,
 } from 'lucide-react';
 
 import {
@@ -141,12 +148,79 @@ const INITIAL_JOURNAL_ENTRIES: JournalEntry[] = [
   },
 ];
 
+const INITIAL_MILESTONE_PHOTOS: MilestonePhoto[] = [
+  {
+    id: 'photo-1',
+    weekNumber: 12,
+    date: '2026-08-03',
+    type: 'ultrasound',
+    photoUrl: 'https://images.unsplash.com/photo-1544126592-807ade215a0b?auto=format&fit=crop&w=1000&q=80',
+    notes: 'First trimester 12-week nuchal translucency scan. Strong little heartbeat at 162 bpm!',
+    filterApplied: 'caramel',
+    textOverlay: 'Week 12 ✨ First Scan',
+    aspectRatio: '4:5',
+    tags: ['Week 12', 'Ultrasound', 'Heartbeat'],
+  },
+  {
+    id: 'photo-2',
+    weekNumber: 16,
+    date: '2026-08-31',
+    type: 'bump',
+    photoUrl: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=1000&q=80',
+    notes: 'First real bump popping out in the morning! Fitting into first maternity jeans.',
+    filterApplied: 'rose',
+    textOverlay: 'Week 16 🌸 First Bump',
+    aspectRatio: '4:5',
+    tags: ['Week 16', 'Bump', 'Maternity'],
+  },
+  {
+    id: 'photo-3',
+    weekNumber: 20,
+    date: '2026-09-28',
+    type: 'ultrasound',
+    photoUrl: 'https://images.unsplash.com/photo-1578357078586-491adf1aa5ba?auto=format&fit=crop&w=1000&q=80',
+    notes: 'Halfway anatomy scan! Ten fingers, ten toes, and healthy heart. Sucking her thumb!',
+    filterApplied: 'bw',
+    textOverlay: 'Week 20 🩺 Halfway Scan',
+    aspectRatio: '4:5',
+    tags: ['Week 20', 'Anatomy', 'Margot'],
+  },
+  {
+    id: 'photo-4',
+    weekNumber: 24,
+    date: '2026-10-26',
+    type: 'bump',
+    photoUrl: 'https://images.unsplash.com/photo-1584447141399-be2862ea7596?auto=format&fit=crop&w=1000&q=80',
+    notes: 'Week 24 milestone! Baby kicked right into the camera sensor this morning.',
+    filterApplied: 'caramel',
+    textOverlay: 'Week 24 ✨ Bump Milestone',
+    aspectRatio: '4:5',
+    tags: ['Week 24', 'Bump', 'Kicks'],
+  },
+];
+
 export default function App() {
   // Device frame vs full width mode
   const [isDeviceFrame, setIsDeviceFrame] = useState(true);
   const [showAndroidStudio, setShowAndroidStudio] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAssistantModal, setShowAssistantModal] = useState(false);
+
+  // Global Theme Mode State with localStorage persistence
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('maman_theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('maman_theme', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // App Profile & State
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -159,7 +233,98 @@ export default function App() {
   const [sizeTheme, setSizeTheme] = useState<SizeTheme>('fruits');
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState<'home' | 'logger' | 'baby' | 'tools' | 'guides'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'logger' | 'baby' | 'calendar' | 'tools' | 'guides'>('home');
+
+  // Calendar Schedule Events State & Persistence
+  const [calendarEvents, setCalendarEvents] = useState<CalendarScheduleEvent[]>(() => {
+    const saved = localStorage.getItem('maman_assistant_calendar_events');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    const today = new Date();
+    const dToday = toISODate(today);
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    const dTomorrow = toISODate(tmrw);
+    const in3Days = new Date();
+    in3Days.setDate(in3Days.getDate() + 3);
+    const dIn3Days = toISODate(in3Days);
+
+    return [
+      {
+        id: 'seed-1',
+        title: 'Pediatrician 4-Month Checkup & Measurements',
+        date: dToday,
+        time: '10:30 AM',
+        category: 'appointment',
+        notes: 'Prepare questions about tummy time progress and solid food introduction window.',
+        completed: false,
+        createdAt: Date.now() - 86400000,
+      },
+      {
+        id: 'seed-2',
+        title: 'Evening Gratitude & Baby Milestone Reflection',
+        date: dToday,
+        time: '08:30 PM',
+        category: 'journal',
+        notes: 'Baby smiled intentionally after bathtime! Mom feeling more energized today.',
+        completed: true,
+        createdAt: Date.now() - 43200000,
+      },
+      {
+        id: 'seed-3',
+        title: 'Baby Recommended Vaccines & Health Booster',
+        date: dTomorrow,
+        time: '11:00 AM',
+        category: 'appointment',
+        notes: 'Bring vaccination yellow card and favorite soothing swaddle.',
+        completed: false,
+        createdAt: Date.now(),
+      },
+      {
+        id: 'seed-4',
+        title: 'Weekly Bump Snapshot & Mom Recovery Check',
+        date: dIn3Days,
+        time: '09:00 AM',
+        category: 'journal',
+        notes: 'Capture weekly milestone photo and check in on hydration.',
+        completed: false,
+        createdAt: Date.now(),
+      },
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem(
+      'maman_assistant_calendar_events',
+      JSON.stringify(calendarEvents)
+    );
+  }, [calendarEvents]);
+
+  const handleAddCalendarEvent = (
+    eventData: Omit<CalendarScheduleEvent, 'id' | 'createdAt'>
+  ) => {
+    const newEvent: CalendarScheduleEvent = {
+      ...eventData,
+      id: `evt-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: Date.now(),
+    };
+    setCalendarEvents((prev) => [newEvent, ...prev]);
+  };
+
+  const handleUpdateCalendarEvent = (updated: CalendarScheduleEvent) => {
+    setCalendarEvents((prev) =>
+      prev.map((ev) => (ev.id === updated.id ? updated : ev))
+    );
+  };
+
+  const handleDeleteCalendarEvent = (id: string) => {
+    setCalendarEvents((prev) => prev.filter((ev) => ev.id !== id));
+  };
 
   // Data collections with local storage persistence
   const [kickSessions, setKickSessions] = useState<KickSession[]>(() => {
@@ -297,6 +462,11 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [milestonePhotos, setMilestonePhotos] = useState<MilestonePhoto[]>(() => {
+    const saved = localStorage.getItem('maman_milestone_photos');
+    return saved ? JSON.parse(saved) : INITIAL_MILESTONE_PHOTOS;
+  });
+
   // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('maman_profile', JSON.stringify(profile));
@@ -322,6 +492,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('maman_journal', JSON.stringify(journalEntries));
   }, [journalEntries]);
+  useEffect(() => {
+    localStorage.setItem('maman_photos', JSON.stringify(milestonePhotos));
+  }, [milestonePhotos]);
   useEffect(() => {
     localStorage.setItem('maman_vaccines', JSON.stringify(vaccines));
   }, [vaccines]);
@@ -521,6 +694,14 @@ export default function App() {
               title="Toggle Google Pixel Frame"
             >
               <Smartphone className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 hover:bg-stone-100 dark:hover:bg-stone-800 rounded-xl cursor-pointer transition-colors"
+              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
             </button>
 
             <button
@@ -765,6 +946,21 @@ export default function App() {
                       </div>
                     </div>
                   </div>
+
+                  {/* Milestone Bump & Scan Photo Studio */}
+                  <MilestonePhotoStudio
+                    photos={milestonePhotos}
+                    currentWeek={selectedWeek}
+                    motherName={profile.motherName}
+                    babyName={isTwin ? `${profile.babyName} & ${profile.babyNameTwin}` : profile.babyName}
+                    onAddPhoto={(newP) => setMilestonePhotos([newP, ...milestonePhotos])}
+                    onUpdatePhoto={(upP) =>
+                      setMilestonePhotos(milestonePhotos.map((p) => (p.id === upP.id ? upP : p)))
+                    }
+                    onDeletePhoto={(delId) =>
+                      setMilestonePhotos(milestonePhotos.filter((p) => p.id !== delId))
+                    }
+                  />
                 </div>
               )}
 
@@ -862,10 +1058,39 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB 4: FAMILY PLANNING & TOOLS */}
+              {/* TAB 4: CALENDAR SCHEDULE & FULL MONTHLY/WEEKLY VIEW */}
+              {activeTab === 'calendar' && (
+                <CalendarTab
+                  events={calendarEvents}
+                  onAddEvent={handleAddCalendarEvent}
+                  onUpdateEvent={handleUpdateCalendarEvent}
+                  onDeleteEvent={handleDeleteCalendarEvent}
+                  journalEntries={journalEntries}
+                  onAddJournalEntry={(entry) => setJournalEntries([entry, ...journalEntries])}
+                  motherName={profile.motherName}
+                  babyName={isTwin ? `${profile.babyName} & ${profile.babyNameTwin}` : profile.babyName}
+                  dueDate={profile.dueDate}
+                  isTwin={isTwin}
+                />
+              )}
+
+              {/* TAB 5: FAMILY PLANNING & TOOLS */}
               {activeTab === 'tools' && (
                 <div className="space-y-4">
                   <OvulationCalendar />
+                  <MilestonePhotoStudio
+                    photos={milestonePhotos}
+                    currentWeek={selectedWeek}
+                    motherName={profile.motherName}
+                    babyName={isTwin ? `${profile.babyName} & ${profile.babyNameTwin}` : profile.babyName}
+                    onAddPhoto={(newP) => setMilestonePhotos([newP, ...milestonePhotos])}
+                    onUpdatePhoto={(upP) =>
+                      setMilestonePhotos(milestonePhotos.map((p) => (p.id === upP.id ? upP : p)))
+                    }
+                    onDeletePhoto={(delId) =>
+                      setMilestonePhotos(milestonePhotos.filter((p) => p.id !== delId))
+                    }
+                  />
                   <RegistryChecklist
                     items={registryItems}
                     onToggleItem={(id) =>
@@ -887,7 +1112,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* TAB 5: KNOWLEDGE BASE & DOCTOR VISITS */}
+              {/* TAB 6: KNOWLEDGE BASE & DOCTOR VISITS */}
               {activeTab === 'guides' && (
                 <div className="space-y-4">
                   <KnowledgeBase
@@ -929,32 +1154,37 @@ export default function App() {
 
             {/* Android Material 3 Fixed Bottom Navigation Bar */}
             <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-stone-900/95 backdrop-blur-md border-t border-stone-200 dark:border-stone-800">
-              <div className="max-w-md mx-auto grid grid-cols-5 items-center h-16 px-1">
+              <div className="max-w-md mx-auto grid grid-cols-6 items-center h-16 px-1">
                 {[
                   {
                     id: 'home' as const,
                     label: t.tabs.pregnancy,
-                    icon: <Heart className="w-5 h-5" />,
+                    icon: <Heart className="w-4 h-4" />,
                   },
                   {
                     id: 'logger' as const,
                     label: t.tabs.logger,
-                    icon: <Activity className="w-5 h-5" />,
+                    icon: <Activity className="w-4 h-4" />,
                   },
                   {
                     id: 'baby' as const,
                     label: t.tabs.babyLog,
-                    icon: <Baby className="w-5 h-5" />,
+                    icon: <Baby className="w-4 h-4" />,
+                  },
+                  {
+                    id: 'calendar' as const,
+                    label: t.tabs.calendar,
+                    icon: <CalendarDays className="w-4 h-4" />,
                   },
                   {
                     id: 'tools' as const,
                     label: t.tabs.planning,
-                    icon: <Calendar className="w-5 h-5" />,
+                    icon: <CheckSquare className="w-4 h-4" />,
                   },
                   {
                     id: 'guides' as const,
                     label: t.tabs.guides,
-                    icon: <BookOpen className="w-5 h-5" />,
+                    icon: <BookOpen className="w-4 h-4" />,
                   },
                 ].map((item) => {
                   const isActive = activeTab === item.id;
@@ -975,7 +1205,9 @@ export default function App() {
                       >
                         {item.icon}
                       </div>
-                      <span className="text-[10px] tracking-tight mt-0.5">{item.label}</span>
+                      <span className="text-[9px] tracking-tight mt-0.5 truncate max-w-full px-0.5 font-medium">
+                        {item.label}
+                      </span>
                     </button>
                   );
                 })}
@@ -1016,6 +1248,10 @@ export default function App() {
               language={profile.language || 'en'}
               onClose={() => setShowAssistantModal(false)}
               isModal={true}
+              calendarEvents={calendarEvents}
+              onAddCalendarEvent={handleAddCalendarEvent}
+              onUpdateCalendarEvent={handleUpdateCalendarEvent}
+              onDeleteCalendarEvent={handleDeleteCalendarEvent}
             />
           </div>
         </div>

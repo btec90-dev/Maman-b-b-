@@ -30,6 +30,7 @@ export interface Translations {
     pregnancy: string;
     logger: string;
     babyLog: string;
+    calendar: string;
     planning: string;
     guides: string;
   };
@@ -163,6 +164,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Pregnancy',
       logger: 'Logger',
       babyLog: 'Baby Log',
+      calendar: 'Calendar',
       planning: 'Planning',
       guides: 'Guides',
     },
@@ -294,6 +296,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Grossesse',
       logger: 'Journal',
       babyLog: 'Bébé',
+      calendar: 'Calendrier',
       planning: 'Outils',
       guides: 'Guides',
     },
@@ -425,6 +428,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Embarazo',
       logger: 'Registro',
       babyLog: 'Bebé',
+      calendar: 'Calendario',
       planning: 'Herramientas',
       guides: 'Guías',
     },
@@ -556,6 +560,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Schwangerschaft',
       logger: 'Tagebuch',
       babyLog: 'Baby',
+      calendar: 'Kalender',
       planning: 'Planung',
       guides: 'Ratgeber',
     },
@@ -687,6 +692,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Gravidez',
       logger: 'Diário',
       babyLog: 'Bebê',
+      calendar: 'Calendário',
       planning: 'Ferramentas',
       guides: 'Guias',
     },
@@ -818,6 +824,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'الحمل',
       logger: 'السجل',
       babyLog: 'الطفل',
+      calendar: 'التقويم',
       planning: 'التخطيط',
       guides: 'الدلائل',
     },
@@ -949,6 +956,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: 'Gravidanza',
       logger: 'Registro',
       babyLog: 'Bambino',
+      calendar: 'Calendario',
       planning: 'Strumenti',
       guides: 'Guide',
     },
@@ -1080,6 +1088,7 @@ export const TRANSLATIONS: Record<SupportedLanguage, Translations> = {
       pregnancy: '妊娠',
       logger: '記録',
       babyLog: '育児',
+      calendar: 'カレンダー',
       planning: 'ツール',
       guides: 'ガイド',
     },
